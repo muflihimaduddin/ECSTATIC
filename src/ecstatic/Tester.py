@@ -220,10 +220,12 @@ def main():
 
 def build_benchmark(benchmark: str) -> Benchmark:
     # TODO: Check that benchmarks are loaded. If not, load from git.
-    if not os.path.exists("/benchmarks"):
+    # Check if benchmark-specific directory exists, not just /benchmarks
+    benchmark_marker = f"/benchmarks/{benchmark.replace('-', '_')}"  # Try common naming patterns
+    if not os.path.exists("/benchmarks") or not any(os.path.exists(f"/benchmarks/{d}") for d in os.listdir("/benchmarks") if benchmark.replace("-", "").lower() in d.lower()):
         with as_file(importlib.resources.files("src.resources.benchmarks").joinpath(benchmark).joinpath("build.sh")) as build:
             logging.info(f"Building benchmark....")
-            subprocess.run(build)
+            subprocess.run(["bash", str(build)])
     with as_file(importlib.resources.files("src.resources.benchmarks").joinpath(benchmark)) as benchmark_dir:
         if os.path.exists(index_file := Path(benchmark_dir)/Path("index.json")):
             return BenchmarkReader().read_benchmark(index_file)

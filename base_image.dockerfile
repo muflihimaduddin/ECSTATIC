@@ -1,12 +1,14 @@
-FROM ubuntu:20.04 as python-build
+FROM ubuntu:22.04 as python-build
 SHELL ["/bin/bash", "-c"]
 RUN apt-get update -y && apt-get upgrade -y && \
-    apt-get install -y software-properties-common gcc apt-transport-https && \
-    add-apt-repository -y ppa:deadsnakes/ppa &&  \
-    apt-get install -y cmake z3 python3.10 python3.10-dev python3-distutils python3-pip python3-apt python3.10-venv pkg-config libcairo2-dev libjpeg-dev libgif-dev \
-    openjdk-8-jdk git maven wget && \
-    DEBIAN_FRONTEND=noninteractive  \
-    apt-get install -y --no-install-recommends --assume-yes build-essential libpq-dev unzip
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --no-install-recommends --assume-yes \
+    software-properties-common gcc apt-transport-https \
+    build-essential libpq-dev unzip \
+    cmake z3 python3.10 python3.10-dev python3.10-venv python3-distutils python3-pip python3-apt \
+    pkg-config libcairo2-dev libjpeg-dev libgif-dev \
+    openjdk-8-jdk git maven wget \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN apt-get update && apt-get install -y nodejs npm
 
 FROM python-build AS ecstatic-build

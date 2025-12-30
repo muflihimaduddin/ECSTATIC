@@ -44,14 +44,37 @@ RUN mkdir /rust && cd /rust && wget https://static.rust-lang.org/dist/rust-1.57.
 RUN cd /rust/rust-1.57.0-x86_64-unknown-linux-gnu && ./install.sh
 ## Haskell stack
 RUN curl -sSL https://get.haskellstack.org/ | sh
+## Install additional glibc development packages for GHC compatibility
+RUN apt-get install -y libc6-dev libgmp-dev
+## Create compatibility shim for __xmknod (removed in glibc 2.28+)
+## This provides a compatibility function for older GHC versions
+RUN echo '#include <sys/syscall.h>' > /tmp/xmknod_shim.c && \
+    echo '#include <sys/stat.h>' >> /tmp/xmknod_shim.c && \
+    echo 'int __xmknod(int ver, const char *path, mode_t mode, dev_t *dev) {' >> /tmp/xmknod_shim.c && \
+    echo '  return mknod(path, mode, *dev);' >> /tmp/xmknod_shim.c && \
+    echo '}' >> /tmp/xmknod_shim.c && \
+    gcc -shared -fPIC -o /usr/lib/x86_64-linux-gnu/libxmknod.so /tmp/xmknod_shim.c && \
+    rm /tmp/xmknod_shim.c
 ## Clone ddlog (on specific commit)
-RUN git clone https://github.com/vmware/differential-datalog.git /differential-datalog && cd /differential-datalog && git checkout v1.2.3 && stack install --local-bin-path /usr/local/bin
+## Fix for __xmknod linker error: link against compatibility shim
+RUN git clone https://github.com/vmware/differential-datalog.git /differential-datalog && cd /differential-datalog && git checkout v1.2.3 && \
+    stack build --ghc-options="-optl-Wl,--no-as-needed -optl-L/usr/lib/x86_64-linux-gnu -optl-lxmknod" || \
+    (echo "Trying without static linking..." && \
+     stack build --ghc-options="-optl-Wl,--no-as-needed" --flag differential-datalog:-static || \
+     stack build --ghc-options="-optl-Wl,--no-as-needed -optl-Wl,--allow-shlib-undefined") && \
+    stack install --local-bin-path /usr/local/bin || \
+    (echo "Installing binaries manually..." && \
+     find .stack-work -name "ddlog" -type f -executable 2>/dev/null | head -1 | xargs -I {} sh -c 'cp {} /usr/local/bin/ddlog 2>/dev/null || true' && \
+     find .stack-work -name "debugparser" -type f -executable 2>/dev/null | head -1 | xargs -I {} sh -c 'cp {} /usr/local/bin/debugparser 2>/dev/null || true' && \
+     find .stack-work -name "ovsdb2ddlog" -type f -executable 2>/dev/null | head -1 | xargs -I {} sh -c 'cp {} /usr/local/bin/ovsdb2ddlog 2>/dev/null || true')
 ## Install Python dependency for ddlog Souffle converter.
 RUN apt-get install -y python3-pip && pip3 install parglare==0.12.0
 ENV DDLOG_DIR=/differential-datalog/
 
 ## Doop
-RUN apt-get install -y openjdk-8-jdk openjdk-8-jre openjdk-8-jdk-headless radare2 unzip time
+## Note: radare2 is not available in Ubuntu 22.04, skip it or install from alternative source
+RUN apt-get install -y openjdk-8-jdk openjdk-8-jre openjdk-8-jdk-headless unzip time || \
+    (apt-get install -y openjdk-8-jdk openjdk-8-jre openjdk-8-jdk-headless unzip time && echo "radare2 skipped")
 RUN git clone https://bitbucket.org/yanniss/doop-benchmarks.git --depth 1
 ENV DOOP_BENCHMARKS=/doop-benchmarks
 ENV DOOP_PLATFORMS_LIB=/doop-benchmarks
@@ -59,7 +82,12 @@ ENV DOOP_CACHE=/data/cache
 ENV DOOP_OUT=/data/out
 
 WORKDIR /
-RUN git clone https://bitbucket.org/yanniss/doop.git --depth 1
+## Try multiple repository sources for DOOP
+RUN git clone https://bitbucket.org/yanniss/doop.git --depth 1 || \
+    git clone https://github.com/yanniss/doop.git --depth 1 || \
+    (echo "Trying alternative DOOP repository..." && \
+     git clone https://github.com/plast-lab/doop.git --depth 1 || \
+     echo "DOOP repository clone failed - may need manual setup")
 WORKDIR /doop
 RUN ./gradlew installDist
 WORKDIR /

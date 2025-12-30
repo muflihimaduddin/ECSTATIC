@@ -1,0 +1,49 @@
+{
+    "@context": "https://w3id.org/ro/crate/1.1/context",
+    "@graph": [
+        {
+            "@id": "./",
+            "@type": "Dataset",
+            "actionApplication": [
+                {
+                    "@id": "#ChameleonJupyterLab"
+                }
+            ],
+            "author": [
+                {
+                    "@id": "#author_0"
+                }
+            ],
+            "datePublished": "2025-12-30T12:00:00+00:00",
+            "description": "This repository reproduces the ECSTATIC framework, which tests static analysis tools with different settings. ECSTATIC finds problems when comparing how tools work (More Sound Than/MST and More Precise Than/MPT). It can analyze call graphs using WALA, SOOT, and DOOP, and check security issues in Android apps using FlowDroid.\n\nAll 8 base testing experiments from the original ECSTATIC paper were reproduced successfully. This created 19,769 result files using SOOT, WALA, DOOP, and FlowDroid on different benchmarks. Some small changes were made for Ubuntu 22.04, but all experiments worked correctly, showing that the framework works and can be reproduced.\n\nOriginal Paper: ECSTATIC: Extensible, Customizable Static Analysis Tester Informed by Configuration, ICSE 2023. Link: https://dl.acm.org/doi/10.1109/ICSE48619.2023.00056",
+            "disambiguatingDescription": "Reproducibility study: Testing framework for static analysis tools",
+            "keywords": "reproducible research,experiment,static analysis,ECSTATIC",
+            "name": "ECSTATIC Reproducibility Study"
+        },
+        {
+            "@id": "trovi.json",
+            "@type": "CreativeWork",
+            "about": {
+                "@id": "./"
+            },
+            "conformsTo": {
+                "@id": "https://w3id.org/ro/crate/1.1"
+            }
+        },
+        {
+            "@id": "#author_0",
+            "@type": "Person",
+            "affiliation": "Diponegoro University",
+            "email": "muflihmimaduddin@gmail.com",
+            "name": "Muflh Muhammad Imaduddin"
+        },
+        {
+            "@id": "#ChameleonJupyterLab",
+            "@type": "SoftwareApplication",
+            "name": "Chameleon JupyterLab",
+            "trovi_arguments": "{}",
+            "trovi_type": "jupyterhub",
+            "url": "https://jupyter.chameleoncloud.org/"
+        }
+    ]
+}
